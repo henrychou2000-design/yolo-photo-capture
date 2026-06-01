@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>ระบบถ่ายภาพวัตถุดิบ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sarabun',sans-serif;background:#f0f2f5;color:#1a1a2e;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:14px 16px;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(0,0,0,.35)}
+.header h1{font-size:17px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;line-height:1}
+
+/* ── Home ── */
+.home-body{padding:16px;flex:1;overflow-y:auto}
+.setup-banner{background:#fff8e1;border:2px solid #ffc107;border-radius:14px;
+  padding:16px;margin-bottom:16px;font-size:13px;color:#6d4c00}
+.setup-banner h3{font-size:15px;margin-bottom:8px}
+.setup-url{width:100%;margin-top:8px;padding:10px;border:1.5px solid #ffc107;
+  border-radius:8px;font-size:12px;font-family:monospace;background:#fffde7}
+.setup-save{margin-top:8px;background:#ffc107;color:#333;border:none;border-radius:8px;
+  padding:9px 18px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px}
+.home-sub{color:#888;font-size:13px;text-align:center;margin-bottom:14px}
+.day-grid{display:flex;flex-direction:column;gap:10px}
+.day-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.07);
+  cursor:pointer;border-left:5px solid #ccc;display:flex;align-items:center;gap:14px;
+  transition:transform .12s,box-shadow .12s;-webkit-user-select:none;user-select:none}
+.day-card:active{transform:scale(.97);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.day-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;
+  justify-content:center;font-size:24px;flex-shrink:0}
+.day-info{flex:1;min-width:0}
+.day-label{font-size:11px;color:#aaa;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.day-name{font-size:16px;font-weight:700;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-meta{font-size:12px;color:#888}
+.day-badge{background:#f0f0f0;border-radius:20px;padding:4px 10px;font-size:12px;
+  font-weight:700;color:#666;flex-shrink:0}
+.day-badge.done{background:#e8f5e9;color:#2e7d32}
+.c1{border-left-color:#4CAF50}.c1 .day-icon{background:#e8f5e9}
+.c2{border-left-color:#2196F3}.c2 .day-icon{background:#e3f2fd}
+.c3{border-left-color:#FF5722}.c3 .day-icon{background:#fbe9e7}
+.c4{border-left-color:#FF9800}.c4 .day-icon{background:#fff3e0}
+.c5{border-left-color:#9C27B0}.c5 .day-icon{background:#f3e5f5}
+.c6{border-left-color:#00BCD4}.c6 .day-icon{background:#e0f7fa}
+.c7{border-left-color:#607D8B}.c7 .day-icon{background:#eceff1}
+
+/* ── Items ── */
+.items-body{flex:1;overflow-y:auto;padding:10px}
+.day-summary{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.day-summary-icon{font-size:22px}
+.day-summary-text{font-size:13px;color:#666}
+.day-summary-text strong{color:#333;display:block;font-size:15px;font-weight:700}
+.item-card{background:#fff;border-radius:11px;padding:12px 14px;margin-bottom:7px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;display:flex;align-items:center;
+  gap:11px;transition:background .12s;-webkit-user-select:none;user-select:none}
+.item-card:active{background:#f5f5f5}
+.item-status{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0;background:#f5f5f5}
+.item-status.up{background:#e3f2fd}
+.item-details{flex:1;min-width:0}
+.item-code{font-size:10px;color:#aaa;font-weight:700;letter-spacing:.4px}
+.item-name{font-size:13px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-qty{font-size:11px;color:#999;margin-top:1px}
+.item-chip{font-size:11px;font-weight:700;color:#bbb;background:#f5f5f5;border-radius:10px;
+  padding:3px 8px;flex-shrink:0}
+.item-chip.up{color:#1976D2;background:#e3f2fd}
+
+/* ── Camera ── */
+.camera-body{flex:1;display:flex;flex-direction:column;background:#000}
+.angle-bar{background:rgba(255,255,255,.95);padding:9px 12px;display:flex;gap:6px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory}
+.angle-bar::-webkit-scrollbar{display:none}
+.a-chip{flex-shrink:0;background:#f0f0f0;border-radius:20px;padding:4px 10px;
+  font-size:12px;color:#666;white-space:nowrap;scroll-snap-align:start;transition:all .2s}
+.a-chip.done{background:#4CAF50;color:#fff}
+.a-chip.active{background:#FF9800;color:#fff}
+#cam-wrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+  background:#000;overflow:hidden;min-height:200px}
+#cam-video{width:100%;height:100%;object-fit:cover;display:block}
+#cam-canvas{display:none}
+.cam-error{display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:30px 20px;text-align:center;position:absolute;inset:0;background:#111}
+.cam-error.show{display:flex}
+.cam-error-icon{font-size:44px;margin-bottom:12px}
+.cam-error-title{color:#fff;font-size:16px;font-weight:700;margin-bottom:6px}
+.cam-error-sub{color:#aaa;font-size:13px;line-height:1.5}
+.photos-strip{background:#111;padding:8px 10px;display:flex;gap:7px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;min-height:78px;align-items:center}
+.photos-strip::-webkit-scrollbar{display:none}
+.strip-empty{color:#444;font-size:12px;text-align:center;width:100%;padding:0 10px}
+.thumb-wrap{position:relative;flex-shrink:0}
+.thumb-wrap img{width:62px;height:62px;border-radius:8px;object-fit:cover;display:block;
+  border:2px solid #333}
+.del-btn{position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#f44336;
+  color:#fff;border:none;border-radius:50%;font-size:13px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:700}
+.t-spin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);border-radius:8px;font-size:20px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.t-ok{position:absolute;bottom:2px;right:2px;font-size:16px;line-height:1;
+  text-shadow:0 0 4px #000}
+.t-err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(180,0,0,.6);border-radius:8px;font-size:22px;cursor:pointer;color:#fff;
+  font-weight:700}
+.status-bar{background:#1a1a1a;padding:6px 14px;display:flex;align-items:center;
+  justify-content:space-between;font-size:12px;color:#aaa;min-height:32px}
+.status-ok{color:#4CAF50;font-weight:700}
+.status-pending{color:#FF9800}
+.cam-controls{background:#111;padding:14px 18px 28px;display:flex;align-items:center;justify-content:space-between}
+.shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid #555;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);transition:transform .1s;flex-shrink:0}
+.shutter:active{transform:scale(.88)}
+.shutter-inner{width:50px;height:50px;border-radius:50%;background:#fff;border:2px solid #ddd}
+.count-badge{color:#fff;background:rgba(255,255,255,.1);border-radius:10px;
+  padding:8px 12px;font-size:13px;font-weight:700;min-width:58px;text-align:center}
+.up-btn{background:#4CAF50;color:#fff;border:none;border-radius:12px;padding:11px 16px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;
+  line-height:1.3;transition:background .2s;min-width:74px}
+.up-btn:disabled{background:#555;cursor:not-allowed;color:#888}
+.up-btn:active:not(:disabled){background:#388E3C}
+#file-in{display:none}
+.file-btn{color:#aaa;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+  border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;
+  font-family:'Sarabun',sans-serif;margin-top:6px}
+
+/* ── Upload Overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:1000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}
+.overlay.hidden{display:none}
+.ov-icon{font-size:48px;margin-bottom:14px}
+.ov-title{color:#fff;font-size:20px;font-weight:700;margin-bottom:6px;text-align:center}
+.ov-sub{color:#aaa;font-size:14px;margin-bottom:26px;text-align:center;line-height:1.5}
+.pb-wrap{width:100%;max-width:300px;background:#333;border-radius:20px;overflow:hidden;
+  height:18px;margin-bottom:10px}
+.pb-fill{height:100%;background:linear-gradient(90deg,#4CAF50,#8BC34A);border-radius:20px;
+  transition:width .35s ease;width:0%}
+.pb-text{color:#ccc;font-size:14px;font-weight:600;margin-bottom:4px}
+.pb-file{color:#666;font-size:11px;max-width:280px;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warn-txt{color:#FF9800;font-size:13px;margin-top:20px;text-align:center;line-height:1.6}
+.done-wrap{display:flex;flex-direction:column;align-items:center}
+.done-acts{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.btn{border:none;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:'Sarabun',sans-serif;transition:opacity .15s}
+.btn:active{opacity:.8}
+.btn-ok{background:#4CAF50;color:#fff}
+.btn-back{background:#333;color:#fff}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:#333;color:#fff;padding:11px 18px;border-radius:22px;font-size:13px;
+  z-index:2000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ HOME ════ -->
+<div id="s-home" class="screen active">
+  <div class="header">
+    <span style="font-size:26px">📦</span>
+    <div style="flex:1">
+      <div style="font-size:11px;opacity:.6">YOLO Training System</div>
+      <h1>ระบบถ่ายภาพวัตถุดิบ</h1>
+    </div>
+  </div>
+  <div class="home-body">
+    <div class="setup-banner" id="setup-banner">
+      <h3>⚙️ ตั้งค่า Google Drive URL</h3>
+      <p>ใส่ URL จาก Google Apps Script เพื่อเปิดใช้งานการอัปโหลด<br>
+         (ดูวิธีตั้งค่าใน gas/upload.gs)</p>
+      <input type="url" id="gas-url-in" class="setup-url"
+             placeholder="https://script.google.com/macros/s/.../exec">
+      <br>
+      <button class="setup-save" onclick="saveGasUrl()">💾 บันทึก URL</button>
+    </div>
+    <p class="home-sub">เลือกหมวดหมู่ที่ต้องการถ่ายวันนี้</p>
+    <div class="day-grid" id="day-grid"></div>
+  </div>
+</div>
+
+<!-- ════ ITEMS ════ -->
+<div id="s-items" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">‹</button>
+    <h1 id="items-title">รายการสินค้า</h1>
+  </div>
+  <div class="items-body">
+    <div class="day-summary" id="day-summary"></div>
+    <div id="items-list"></div>
+  </div>
+</div>
+
+<!-- ════ CAMERA ════ -->
+<div id="s-camera" class="screen">
+  <div class="header" style="background:#111">
+    <button class="back-btn" style="background:rgba(255,255,255,.1)" onclick="backToItems()">‹</button>
+    <div style="flex:1;min-width:0">
+      <div id="cam-code" style="font-size:10px;opacity:.5;font-weight:700;letter-spacing:.4px"></div>
+      <h1 id="cam-name" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></h1>
+    </div>
+  </div>
+  <div class="camera-body">
+    <div class="angle-bar" id="angle-bar">
+      <div class="a-chip active" data-i="0">📋 ป้ายฉลากหน้า</div>
+      <div class="a-chip" data-i="1">📦 ภาพรวมทั้งหมด</div>
+      <div class="a-chip" data-i="2">↗ มุม 45°</div>
+      <div class="a-chip" data-i="3">🏭 สภาพแวดล้อม</div>
+    </div>
+    <div id="cam-wrap">
+      <video id="cam-video" autoplay playsinline muted></video>
+      <canvas id="cam-canvas"></canvas>
+      <div class="cam-error" id="cam-error">
+        <div class="cam-error-icon">📷</div>
+        <div class="cam-error-title">ไม่สามารถเข้าถึงกล้อง</div>
+        <div class="cam-error-sub">กรุณาอนุญาตการใช้กล้อง<br>หรือกดปุ่ม "เลือกรูปจากอัลบัม" ด้านล่าง</div>
+        <button class="file-btn" style="margin-top:14px" onclick="openFileIn()">🖼 เลือกรูปจากอัลบัม</button>
+      </div>
+    </div>
+    <div class="photos-strip" id="photos-strip">
+      <div class="strip-empty">ยังไม่มีรูป — กดปุ่มวงกลมเพื่อถ่าย</div>
+    </div>
+    <div class="status-bar">
+      <span id="status-text">รอการถ่ายรูป</span>
+      <span id="status-count"></span>
+    </div>
+    <div class="cam-controls">
+      <div style="width:70px"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <button class="shutter" onclick="shoot()"><div class="shutter-inner"></div></button>
+        <button class="file-btn" onclick="openFileIn()">🖼 อัลบัม</button>
+      </div>
+      <div class="count-badge" id="count-badge" style="font-size:12px;line-height:1.4;text-align:center">0<br>รูป</div>
+    </div>
+  </div>
+  <input type="file" id="file-in" accept="image/*" multiple onchange="onFileIn(event)">
+</div>
+
+<!-- ════ WARNING OVERLAY (ปิดขณะอัปโหลด) ════ -->
+<div class="overlay hidden" id="ov">
+  <div class="ov-icon">⚠️</div>
+  <div class="ov-title">กำลังอัปโหลดอยู่!</div>
+  <div class="ov-sub">ยังมีรูปที่กำลังส่งค้างอยู่<br>กรุณารอจนกว่าจะเสร็จ</div>
+  <div class="done-acts">
+    <button class="btn btn-back" onclick="closeOv()">รอต่อ</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div><!-- /app -->
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────
+const DAYS = [{"day": 1, "nameTh": "กระดาษม้วน", "nameZh": "原紙捲", "yolo": "paper_roll", "items": [{"code": "AA0101", "name": "30gsm OJI _MG (1270mm x 10,000M)《S》", "unit": "M", "qty": 2350138}, {"code": "AA0102", "name": "45gsm OJI _MG (1270mm x 10,000M)(JPP)", "unit": "M", "qty": 365592}, {"code": "AA0104", "name": "45gsm Flex L/White(1270mm x 10,000M)(白色強化紙)(北海道)", "unit": "M", "qty": 200000}, {"code": "AA0107", "name": "35gsm OJI _MG (1270mm x 10,000M)《S》", "unit": "M", "qty": 15123}, {"code": "AA0113", "name": "40gsm OJI _MG (1270mm x 10,000M)(JPP)", "unit": "M", "qty": 45711}, {"code": "AA0114", "name": "60gsm【OFT Ebetsu】Flex-L white-1270mm", "unit": "M", "qty": 604}, {"code": "AA0115", "name": "30gsm【HAMAYU(S)Y】1270x10000", "unit": "M", "qty": 10000}, {"code": "AA0116", "name": "40gsm OFT_MG (1270mm x 10,000M)《E》", "unit": "M", "qty": 220000}, {"code": "AA0315", "name": "30gsm BTPHC(1270mm x 10,000M)TENTOK", "unit": "M", "qty": 340000}, {"code": "AA1301", "name": "30gsm SCG PAPER(1270mm x 10,000M)(MGF)", "unit": "M", "qty": 40642}, {"code": "AA1302", "name": "45gsm SCG PAPER(1270mm x 10,000M)(MGF)", "unit": "M", "qty": 200690}, {"code": "AA1304", "name": "40gsm SCG PAPER(1270mm x 10,000M)(MGF)", "unit": "M", "qty": 5433}, {"code": "AA1401", "name": "30gsm 白單光紙(50\")(1270mm* 10,000M)(台灣全冠)《M》", "unit": "M", "qty": 261516}, {"code": "AA9996", "name": "80gsm 原紙 (1250mm)(大陸，夏王紙業)", "unit": "M", "qty": 1097}, {"code": "AA9997", "name": "70gsm 原紙 (1250mm)(大陸，夏王紙業)", "unit": "M", "qty": 1166}, {"code": "AA9999", "name": "Off Grade for Tentok (格外紙)", "unit": "M", "qty": 130000}]}, {"day": 2, "nameTh": "ฟิล์ม PVC", "nameZh": "PVC膜捲", "yolo": "pvc_roll", "items": [{"code": "V-A0002", "name": "OJI_51\" PVC用【台灣全冠】", "unit": "M", "qty": 43739}, {"code": "V-A0004", "name": "透明*0.09*1,290mm(台灣利全)", "unit": "M", "qty": 1509}, {"code": "V-A0006", "name": "PVC邊條用PVC膠布(4G0)(台灣利全)(0.19*1280mm)", "unit": "M", "qty": 2000}, {"code": "V-A0007", "name": "PVC邊條用膠布(3H0)(台灣利全)(0.19*1280mm)", "unit": "M", "qty": 2000}, {"code": "V-A0009", "name": "PVC邊條用膠布(0D2/灰色)(台灣利全)(0.15*1430mm)", "unit": "M", "qty": 4000}, {"code": "V-A0011", "name": "PVC半透明印刷用(0M0)( 21P)(台灣利全)(0.07*51.3\")", "unit": "M", "qty": 2000}, {"code": "V-A0014", "name": "PEVA保護膜(台灣正聚)", "unit": "M", "qty": 23100}, {"code": "V-A0015", "name": "PP保護膜(台灣東海清) 0.04mm*125CM (透明)", "unit": "M", "qty": 50}, {"code": "V-A0016", "name": "PE保護膜(台灣合泰)", "unit": "M", "qty": 8600}, {"code": "V-A1103", "name": "OM2，半透明﹝0.06mm*1300m﹞【LTC ED/OM9HGG1】", "unit": "M", "qty": 27700}, {"code": "V-A1104", "name": "0M6，半透明﹝0.06mm*1300m﹞【KOG/0M0H】", "unit": "M", "qty": 9880}, {"code": "V-A1201", "name": "01WH#0E00，白色﹝0.06mm*1300m﹞【KPG/DPEB-16PHR】", "unit": "M", "qty": 151693}, {"code": "V-A1209", "name": "01WH#0E00，白色﹝0.21mm*1280m﹞【DPC/DDIP-002紋】", "unit": "M", "qty": 5000}, {"code": "V-A1210", "name": "01WH#0E00，白色﹝0.3mm*1280m﹞【DPC/IP】", "unit": "M", "qty": 150}, {"code": "V-A1222", "name": "0F7H#OF2，白色﹝0.15mm*1430mm﹞【DPG/EBIV】", "unit": "M", "qty": 18000}, {"code": "V-A1228", "name": "#0F5，白色﹝0.18mm*1280m﹞【DPG/HWDDIP】", "unit": "M", "qty": 4000}, {"code": "V-A1301", "name": "01BH#3400，土黃﹝0.06mm*1300m﹞【KPG/DPEB-16PHR】", "unit": "M", "qty": 17136}, {"code": "V-A1322", "name": "3C0，土黃﹝0.21mm*1280m﹞【DPG/EBIV】", "unit": "M", "qty": 3750}, {"code": "V-A1401", "name": "#7204，墨綠色﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 350}, {"code": "V-A1501", "name": "BY4H#4200，米黃﹝0.06mm*1300m﹞【KPG/DPEB-16PHR】", "unit": "M", "qty": 49003}, {"code": "V-A1503", "name": "BY4H#4200，米黃﹝0.21mm*1280m﹞【002紋/KPG/DPEB】", "unit": "M", "qty": 8000}, {"code": "V-A1504", "name": "#4101，米黃﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 18900}, {"code": "V-A1505", "name": "BY4H#4200，米黃﹝0.21mm*1330m﹞【DPC/IP/光面】", "unit": "M", "qty": 4000}, {"code": "V-A1622", "name": "0B6H，深灰﹝0.06mm*1300mm﹞【DPEB/KPG #0800 16PHR】", "unit": "M", "qty": 1200}, {"code": "V-A1623", "name": "0Y4H#0200，淺灰色﹝0.06mm*1300m﹞【KPG/DPEB-16PHR】", "unit": "M", "qty": 80815}, {"code": "V-A1629", "name": "#0203，深灰色﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 11399}, {"code": "V-A1630", "name": "#0202，淺灰色﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 17200}, {"code": "V-A1701", "name": "#5201，深藍色﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 350}, {"code": "V-A1822", "name": "#4302，棕黃﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 19470}, {"code": "V-A1823", "name": "#4203，淺黃﹝0.06mm*1300m﹞【KPG/DPEB】16PHR", "unit": "M", "qty": 19250}, {"code": "V-A1824", "name": "#4204，深黃﹝0.06mm*1300m﹞【LKPG/DPEB】16PHR", "unit": "M", "qty": 19320}, {"code": "V-A1921", "name": "04BBH，深棕色﹝0.06mm*1300mm﹞【KPG/DPEB #3300 16PHR】", "unit": "M", "qty": 6370}, {"code": "V-A1922", "name": "04BBH，深棕色﹝0.21mm*1280mm﹞【DPG/EBIV #3300】", "unit": "M", "qty": 2000}, {"code": "V-A2001", "name": "089H，黑色﹝0.06mm*1,300mm﹞【KPG/DPEB #089 16PHR】", "unit": "M", "qty": 11424}, {"code": "V-A6001", "name": "UV FILM，膚感面料﹝厚0.065mm* 寬1,320m*長1,500m﹞", "unit": "M", "qty": 5980}, {"code": "V-A7001", "name": "C08-SG，UV透明膜(0.8*130MM)", "unit": "M", "qty": 1291}, {"code": "V-A9001", "name": "0M1，DD霧硬質面料﹝0.06mm*1,300m﹞【DOC】耐候3級", "unit": "M", "qty": 225106}, {"code": "V-A9004", "name": "OM1，DD霧硬質面料﹝0.06mm*1,430m﹞【DOC】", "unit": "M", "qty": 8000}, {"code": "V-A9005", "name": "OA1，DPC高光透明面料﹝0.07mm*1,300m﹞", "unit": "M", "qty": 10940}, {"code": "V-A9007", "name": "OMO，消光﹝0.045mm*1,300m﹞", "unit": "M", "qty": 90750}, {"code": "V-A9012", "name": "OAO，亮光﹝0.045mm*1,300m﹞", "unit": "M", "qty": 2700}]}, {"day": 3, "nameTh": "ถังหมึกพิมพ์", "nameZh": "油墨桶", "yolo": "ink_drum", "items": [{"code": "I0001", "name": "自製-透明-151KG/P", "unit": "KG", "qty": 1273}, {"code": "I0104", "name": "PL-3011F(紅色)(新美光)", "unit": "KG", "qty": 32}, {"code": "I0128", "name": "163411 40\"硝化棉 (新美光)-170KG/P", "unit": "KG", "qty": 850}, {"code": "I0134", "name": "PL-3806TA(紅色)(新美光)", "unit": "KG", "qty": 510}, {"code": "I0147", "name": "PL-3075(紅色)(新美光)", "unit": "KG", "qty": 95}, {"code": "I0151", "name": "PL-9390Q(金色)(新美光)", "unit": "KG", "qty": 96}, {"code": "I0194", "name": "PL-6010( 綠色)(新美光)", "unit": "KG", "qty": 80}, {"code": "I0301", "name": "GP-503(黑色)(TONG JOU)", "unit": "KG", "qty": 3325}, {"code": "I0304", "name": "GP-102D1 白色-INK(TONG JOU)", "unit": "KG", "qty": 2170}, {"code": "I0502", "name": "OPR-113(TONG JOU)-200KG/D", "unit": "KG", "qty": 578}, {"code": "I0603", "name": "WT-107(超級白)(油性)(泰國利豐)", "unit": "KG", "qty": 50}, {"code": "I0605", "name": "CC-50%棉漿(Clear Coating)(泰國利豐)", "unit": "KG", "qty": 42}, {"code": "I0607", "name": "WT-104(打底白)(油性)(泰國利豐)", "unit": "KG", "qty": 1700}, {"code": "I3001", "name": "WT-105(青白)(油性)(泰國利豐)", "unit": "KG", "qty": 750}, {"code": "I3002", "name": "YL-233(土黃)(油性)(泰國利豐)", "unit": "KG", "qty": 570}, {"code": "I3003", "name": "YL-282(透明黃)(油性)(泰國利豐)", "unit": "KG", "qty": 465}, {"code": "I3004", "name": "BU-401(藍色)(油性)(泰國利豐)", "unit": "KG", "qty": 500}, {"code": "I3005", "name": "RD-311(紅色)(油性)(泰國利豐)", "unit": "KG", "qty": 613}, {"code": "I3007", "name": "BR-342(棕色)(油性)(泰國利豐)", "unit": "KG", "qty": 380}, {"code": "I3009", "name": "BU-405(藍色)(油性)(泰國利豐)", "unit": "KG", "qty": 100}, {"code": "I3011", "name": "GN-605(綠色)(油性)(泰國利豐)", "unit": "KG", "qty": 380}, {"code": "I3012", "name": "BU-409(天空藍)(油性)(泰國利豐)", "unit": "KG", "qty": 490}, {"code": "I3013", "name": "WT-102(白色)(油性)(泰國利豐)", "unit": "KG", "qty": 500}, {"code": "I3014", "name": "WT-110(白色)(油性)(泰國利豐)", "unit": "KG", "qty": 1450}, {"code": "I3015", "name": "RD-329(粉紅色)(油性)(泰國利豐)", "unit": "KG", "qty": 380}, {"code": "I4001", "name": "【油墨】NCPL-110G-OPV(大陸洋紫荊)", "unit": "KG", "qty": 1478}, {"code": "I4002", "name": "【油墨】NCPL-110M-OPV(大陸洋紫荊)", "unit": "KG", "qty": 68}, {"code": "I4004", "name": "【油墨】NCMLA-010G-T-Ink-Extender (洋紫荊)", "unit": "KG", "qty": 51}, {"code": "I4005", "name": "【油墨】NCMLA-010M-T-Ink-Extender (洋紫荊)", "unit": "KG", "qty": 51}, {"code": "I4006", "name": "【油墨】NCPL-110Y-80-Ink-Extender (洋紫荊)", "unit": "KG", "qty": 51}, {"code": "I4007", "name": "【油墨】NCPL-210(黃)-JF (洋紫荊)", "unit": "KG", "qty": 1440}, {"code": "I4008", "name": "【油墨】NCPL-3073-JF(紅) (洋紫荊)", "unit": "KG", "qty": 540}, {"code": "I4009", "name": "【油墨】NCPL-102-JF(白) (洋紫荊)", "unit": "KG", "qty": 1440}, {"code": "I4010", "name": "【油墨】NCPL-501-JF(黑) (洋紫荊)", "unit": "KG", "qty": 540}, {"code": "I8001", "name": "GWA 719 面白，建材薄紙墨(水性)", "unit": "KG", "qty": 132}, {"code": "I9001-1", "name": "WT-001(白色)(水性)(泰國利豐)", "unit": "KG", "qty": 250}, {"code": "I9001-3", "name": "WT-002(白色)(水性)(泰國利豐)", "unit": "KG", "qty": 1370}, {"code": "I9003-1", "name": "YL-014(黃色)(水性)(泰國利豐)", "unit": "KG", "qty": 190}, {"code": "I9003-2", "name": "YL-015(黃色)(水性)(泰國利豐)", "unit": "KG", "qty": 270}, {"code": "I9004", "name": "YE-05(土黃)(水性)(泰國利豐)", "unit": "KG", "qty": 600}, {"code": "I9005-1", "name": "RD-021(紅色)(水性)(泰國利豐)", "unit": "KG", "qty": 190}, {"code": "I9005-2", "name": "RD-027(紅色)(水性)(泰國利豐)", "unit": "KG", "qty": 190}, {"code": "I9007-1", "name": "BK-051(黑色)(水性)(泰國利豐)", "unit": "KG", "qty": 760}, {"code": "I9009", "name": "BR-071(棕色)(水性)(泰國利豐)", "unit": "KG", "qty": 380}, {"code": "I9010", "name": "GN-061(蘋果綠)(水性)(泰國利豐)", "unit": "KG", "qty": 190}, {"code": "I9011", "name": "RD-029(螢光紅)(水性)(泰國利豐)", "unit": "KG", "qty": 120}, {"code": "I9013", "name": "RD-022(桃紅)(水性)(泰國利豐)", "unit": "KG", "qty": 190}, {"code": "I9015", "name": "BU-049(天空藍)(水性)(泰國利豐)", "unit": "KG", "qty": 380}, {"code": "V-I0001", "name": "NPA-4018L-2 (翠藍色) PVC-INK (昆山大世界)", "unit": "KG", "qty": 458}, {"code": "V-I1009", "name": "G63-2095HMF(黃色) PVC-INK(新美光)", "unit": "KG", "qty": 159}, {"code": "V-I1010", "name": "G63-3016(紅色) PVC-INK(新美光)", "unit": "KG", "qty": 71}, {"code": "V-I1011", "name": "G63-408H(藍色) PVC-INK(新美光)", "unit": "KG", "qty": 16}, {"code": "V-I2004", "name": "GAB-501(黑色) PVC-INK(東周)", "unit": "KG", "qty": 6}, {"code": "V-I3001", "name": "金油_ PVC-INK(NCNPA-110H-2) (大陸洋紫荊)", "unit": "KG", "qty": 2106}, {"code": "V-I3002", "name": "白墨_PVC-INK(NCNPA-102H-2)(大陸洋紫荊)", "unit": "KG", "qty": 5140}, {"code": "V-I3003", "name": "耐光中黃_PVC-INK(NCNPA-2104H-L-2)(高濃度)(大陸洋紫荊)", "unit": "KG", "qty": 1104}, {"code": "V-I3004", "name": "藍口紅_PVC-INK(NCNPA-3059H-L-2)(高濃度)(大陸洋紫荊)", "unit": "KG", "qty": 380}, {"code": "V-I3005", "name": "黑_PVC-INK(NCNPA-501H-L-2)(大陸洋紫荊)", "unit": "KG", "qty": 170}]}, {"day": 4, "nameTh": "ถังเคลือบผิว", "nameZh": "上光桶", "yolo": "coating_drum", "items": [{"code": "C0110", "name": "3MA-940AM(3D) 主劑(TONG JOU)", "unit": "KG", "qty": 80}, {"code": "C0123", "name": "OPU-7710B-6  亮面PU用B劑(TONG JOU)", "unit": "KG", "qty": 80}, {"code": "C0124", "name": "OPU-673A  亮面PU(TONG JOU)", "unit": "KG", "qty": 400}, {"code": "C0127", "name": "OPU-378AM(平光) PU(TONG JOU)", "unit": "KG", "qty": 280}, {"code": "C0128", "name": "OPU-1075BM(平光B劑)  PU(TONG JOU)", "unit": "KG", "qty": 450}, {"code": "C0129", "name": "W-411，滑劑(東周)(TONG JOU)", "unit": "KG", "qty": 86}, {"code": "C0137", "name": "3MA-03AM-1 (美耐皿霧面)主劑((TONG JOU)", "unit": "KG", "qty": 150}, {"code": "C0141", "name": "3MA-4000AM-1(美耐皿亮面)主劑((TONG JOU)", "unit": "KG", "qty": 190}, {"code": "C0143", "name": "PUM-07AM(全霧PU/A劑) (TONG JOU)", "unit": "KG", "qty": 760}, {"code": "C0144", "name": "OPU-541AM(全霧PU/A劑) (TONG JOU)", "unit": "KG", "qty": 180}, {"code": "C0148", "name": "MA-77A AMINO_A劑(TONG JOU)", "unit": "KG", "qty": 460}, {"code": "C0149", "name": "PB-48-B AMINO_B劑(TONG JOU)", "unit": "KG", "qty": 59}, {"code": "C0150", "name": "MA-08AM_A劑(TONG JOU)", "unit": "KG", "qty": 1310}, {"code": "C0151", "name": "BY-75L硬化劑", "unit": "KG", "qty": 1185}, {"code": "C0152", "name": "BY-75N硬化劑", "unit": "KG", "qty": 940}, {"code": "C0171", "name": "PU-907(泰國利豐)(PUG)", "unit": "KG", "qty": 224}, {"code": "C0313", "name": "PL-0260A(新美光)", "unit": "KG", "qty": 140}, {"code": "C0314", "name": "PL-0260B(新美光)", "unit": "KG", "qty": 150}, {"code": "C0421", "name": "黑色精(台灣建興)-18KG/P", "unit": "KG", "qty": 141}, {"code": "C0422", "name": "紅色精(台灣建興)", "unit": "KG", "qty": 7}, {"code": "C0423", "name": "棕色精(台灣建興)", "unit": "KG", "qty": 52}, {"code": "C0430", "name": "L亮光PU-高固成份(台灣利豐)(PUG)", "unit": "KG", "qty": 1665}, {"code": "C0501", "name": "AM-001(泰國利豐)", "unit": "KG", "qty": 530}, {"code": "C0502", "name": "PT-001(泰國利豐)", "unit": "KG", "qty": 170}, {"code": "C0505", "name": "ME-004(超級霧)(泰國利豐)", "unit": "KG", "qty": 460}, {"code": "C0511", "name": "PU-915(PUM)(平光/啞光)(泰國利豐)", "unit": "KG", "qty": 332}, {"code": "C0512", "name": "ME-003(泰國利豐)", "unit": "KG", "qty": 650}, {"code": "C0514", "name": "AM-002(泰國利豐)", "unit": "KG", "qty": 1145}, {"code": "C0515", "name": "PBM-OJ(防霉抗菌)(泰國利豐)", "unit": "KG", "qty": 0}, {"code": "C0516", "name": "PBM-W200(防霉抗菌)(泰國利豐)", "unit": "KG", "qty": 0}, {"code": "C0520", "name": "PU-961(泰國利豐)", "unit": "KG", "qty": 240}, {"code": "C0521", "name": "PU-966(泰國利豐)", "unit": "KG", "qty": 330}, {"code": "C0522", "name": "KP-399A(泰國利豐)", "unit": "KG", "qty": 33}, {"code": "C0601", "name": "【硬化劑】NCOPV Hardener-J-6(大陸洋紫荊)", "unit": "KG", "qty": 51}, {"code": "C0716", "name": "A9100分散劑(台灣大世界)", "unit": "KG", "qty": 328}, {"code": "C0718", "name": "DA-04半色分離防止劑(台灣大世界)", "unit": "KG", "qty": 341}, {"code": "C0726", "name": "A-7099 壓克力樹脂(ACRYLIC RESIN)", "unit": "KG", "qty": 710}, {"code": "C0801", "name": "DF-103消泡劑", "unit": "KG", "qty": 7}, {"code": "C1001", "name": "H-156硬化劑(台灣祥元)", "unit": "KG", "qty": 1060}, {"code": "C1002", "name": "#150面漆(台灣祥元)", "unit": "KG", "qty": 11340}, {"code": "C3001", "name": "二度底漆(原廠編號:NO.PNM003)(台灣萬通)", "unit": "KG", "qty": 6600}, {"code": "C7001", "name": "PU硬化劑#NL-77(台灣鈞均)", "unit": "KG", "qty": 730}, {"code": "C7002", "name": "PU麻面專用硬化劑#NL-88(台灣鈞均)", "unit": "KG", "qty": 180}, {"code": "C7003", "name": "PU顆粒漆#112(台灣鈞均)", "unit": "KG", "qty": 1070}, {"code": "C7004", "name": "PU耐刮漆#106(台灣鈞均)", "unit": "KG", "qty": 180}, {"code": "C7005", "name": "PU透明漆#138G(台灣鈞均)", "unit": "KG", "qty": 250}, {"code": "C7006", "name": "PU啞光漆#138M(台灣鈞均)", "unit": "KG", "qty": 910}, {"code": "C7007", "name": "PU啞光漆#MLGM-B(台灣鈞均)", "unit": "KG", "qty": 180}, {"code": "C7008", "name": "PU透明漆#MLG-B(台灣鈞均)", "unit": "KG", "qty": 180}, {"code": "C7009", "name": "PU硬化劑#NL-89 (不黃變)(台灣鈞均)", "unit": "KG", "qty": 200}, {"code": "C9005", "name": "Levelling Agent (流平劑)(泰國利豐)", "unit": "KG", "qty": 7}, {"code": "C9007", "name": "D-30PU(水性)(泰國利豐)", "unit": "KG", "qty": 55}, {"code": "C9008", "name": "WBH-100硬化劑(水性)(泰國利豐)", "unit": "KG", "qty": 5}]}, {"day": 5, "nameTh": "ถังตัวทำละลาย", "nameZh": "溶劑桶", "yolo": "solvent_drum", "items": [{"code": "L0111", "name": "T-282W-15  霧面PU用溶劑(TONG JOU)-170KG/D", "unit": "KG", "qty": 800}, {"code": "L0113", "name": "T-169-20  3D平面用溶劑(TONG JOU)-170KG/D", "unit": "KG", "qty": 260}, {"code": "L0115", "name": "T-288  霧面/平光 PU用溶劑(TONG JOU)-170KG/D", "unit": "KG", "qty": 170}, {"code": "L0117", "name": "T-170W-12  AMINO溶劑(TONG JOU)", "unit": "KG", "qty": 1220}, {"code": "L0303", "name": "WO-023 ALONG(亞溶) (新美光)-190KG/P", "unit": "KG", "qty": 514}, {"code": "L0305", "name": "WO-100 B.A-180KG/P", "unit": "KG", "qty": 792}, {"code": "L0308", "name": "WO-610 E.A(新美光)-180KG/P", "unit": "KG", "qty": 726}, {"code": "L0318", "name": "WO-0230 丙酯(新美光)", "unit": "KG", "qty": 180}, {"code": "L0401", "name": "自製-溶劑-179.25KG/P", "unit": "KG", "qty": 2651}, {"code": "L0403", "name": "自製-溶劑(T-160配方)(上光PU用)-175KG/P", "unit": "KG", "qty": 46}, {"code": "L0404", "name": "自製-溶劑(T-159配方)(上光搭配利豐AMINO用)-175KG/P", "unit": "KG", "qty": 1895}, {"code": "L0501", "name": "SL-800(泰國利豐)(Alcohol-95)(工業用酒精)(水性)", "unit": "KG", "qty": 45}, {"code": "L0502", "name": "SL-100(泰國利豐)(甲苯)", "unit": "KG", "qty": 100}, {"code": "L0505", "name": "SL-500(泰國利豐)(ALONG)", "unit": "KG", "qty": 380}, {"code": "L0506", "name": "SL-899(泰國利豐)(IBA)", "unit": "KG", "qty": 320}, {"code": "L0507", "name": "SL-700(泰國利豐)(甲醇)", "unit": "KG", "qty": 50}, {"code": "L0509", "name": "SLPU-001(溶劑)(泰國利豐)", "unit": "KG", "qty": 350}, {"code": "L0511", "name": "SL-151(二甲苯)(溶劑)(泰國利豐)", "unit": "KG", "qty": 78}, {"code": "L0801", "name": "【溶劑】NCOPV-SOLVENT-01(洋紫荊)", "unit": "KG", "qty": 34}, {"code": "L0802", "name": "【溶劑】NCPL-SOLVENT-01(洋紫荊)", "unit": "KG", "qty": 34}, {"code": "L0803", "name": "【溶劑】NCPL-110-OPV(Resin 2.0%)(洋紫荊)", "unit": "KG", "qty": 9000}, {"code": "L0804", "name": "【溶劑】NCPL-110-INK(Resin 2.3%)(洋紫荊)", "unit": "KG", "qty": 8720}, {"code": "L0903", "name": "SVI0103034P(I.B.A)(PACK 4.00)(165KG/DR)(MC)", "unit": "KG", "qty": 103}, {"code": "L0904", "name": "SVM10712022(M.E.K)(PACK 1.00)(165KG/DR)(MC)", "unit": "KG", "qty": 17}, {"code": "V-L0203", "name": "SLPVC-003(泰國利豐)(Mix-solvent)(PVC溶劑)", "unit": "KG", "qty": 680}]}, {"day": 6, "nameTh": "ถุงผงสี", "nameZh": "粉末袋", "yolo": "powder_bag", "items": [{"code": "T0104", "name": "129011 金粉(新美光)-25KG/B", "unit": "KG", "qty": 25}, {"code": "T0105", "name": "130114 填充料(新美光)", "unit": "KG", "qty": 94}, {"code": "T0106", "name": "130103 碳酸鈣(新美光)-25KG/B", "unit": "KG", "qty": 550}, {"code": "T0114", "name": "129013 金粉(新美光)-25KG/B", "unit": "KG", "qty": 25}, {"code": "T0118", "name": "140316 防沉劑(新美光)-12.50KG/B", "unit": "KG", "qty": 13}, {"code": "T0123", "name": "124049 群青(新美光)-25KG/B", "unit": "KG", "qty": 10}, {"code": "T0124", "name": "128024 珍珠粉(新美光)-25KG/B", "unit": "KG", "qty": 18}, {"code": "T0301", "name": "F-700A 沙面粉(TONG JOU)", "unit": "KG", "qty": 15}, {"code": "T0523", "name": "Pigment-1121083 沙面粉(大陸大世界)-20KG/B", "unit": "KG", "qty": 19}, {"code": "T0802", "name": "NO.4110紅(棕)色氧化鐵(台灣奉瑞)-25KG/B", "unit": "KG", "qty": 925}, {"code": "T7002", "name": "6200 鈦白粉-25KG/包", "unit": "KG", "qty": 125}, {"code": "T8002", "name": "OK-412(消光粉)(泰國利豐)", "unit": "KG", "qty": 144}, {"code": "T8003", "name": "R-996，Titanium Dioxide(鈦粉)(泰國利豐)", "unit": "KG", "qty": 600}]}, {"day": 7, "nameTh": "ถังอื่นๆ", "nameZh": "其他桶裝", "yolo": "other_drum", "items": [{"code": "V-C1001", "name": "G06-0807 (美耐皿) PU", "unit": "KG", "qty": 410}]}];
+
+const DAY_META = {
+  1:{e:'📜',c:'c1'}, 2:{e:'🎞️',c:'c2'}, 3:{e:'🖌️',c:'c3'},
+  4:{e:'✨',c:'c4'}, 5:{e:'🧪',c:'c5'}, 6:{e:'🔬',c:'c6'}, 7:{e:'🗂️',c:'c7'}
+};
+const ANGLES = ['📋 ป้ายฉลากหน้า','📦 ภาพรวมทั้งหมด','↗ มุม 45°','🏭 สภาพแวดล้อม'];
+
+// ─── STATE ──────────────────────────────────────────────────
+let curDay=null, curItem=null, photos=[], stream=null;
+// photos[i] = {blob, url, status:'uploading'|'ok'|'error', fileName}
+let gasUrl = localStorage.getItem('gas_url')||'https://script.google.com/macros/s/AKfycby8uQmUFV-1oYt73VXSCJgJVtnufIOkbeNXKdZfh7pf8EBeuq30Yj9kkvSk83JCNhUh/exec';
+let uploaded = JSON.parse(localStorage.getItem('uploaded')||'{}');
+
+// ─── BOOT ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  if(gasUrl){ document.getElementById('gas-url-in').value=gasUrl;
+    document.getElementById('setup-banner').style.display='none'; }
+  renderHome();
+  window.addEventListener('beforeunload',e=>{
+    if(photos.some(p=>p.status==='uploading')){
+      e.preventDefault();e.returnValue='มีรูปกำลังอัปโหลดอยู่';return e.returnValue;
+    }
+  });
+});
+
+// ─── GAS URL ────────────────────────────────────────────────
+function saveGasUrl(){
+  const u=document.getElementById('gas-url-in').value.trim();
+  if(!u.startsWith('https://')){toast('❌ URL ไม่ถูกต้อง');return;}
+  gasUrl=u; localStorage.setItem('gas_url',u);
+  document.getElementById('setup-banner').style.display='none';
+  toast('✅ บันทึก URL แล้ว');
+}
+
+// ─── HOME ────────────────────────────────────────────────────
+function renderHome(){
+  const g=document.getElementById('day-grid'); g.innerHTML='';
+  DAYS.forEach(d=>{
+    const m=DAY_META[d.day];
+    const done=d.items.filter(i=>uploaded[i.code]).length;
+    const el=document.createElement('div');
+    el.className='day-card '+m.c;
+    el.innerHTML=`<div class="day-icon">${m.e}</div>
+      <div class="day-info">
+        <div class="day-label">วันที่ ${d.day}</div>
+        <div class="day-name">${d.nameTh}</div>
+        <div class="day-meta">${d.nameZh} · ${d.items.length} รายการ · เป้าหมาย ${d.items.length*4}+ รูป</div>
+      </div>
+      <div class="day-badge ${done===d.items.length&&d.items.length>0?'done':''}">${done}/${d.items.length}</div>`;
+    el.onclick=()=>openDay(d.day);
+    g.appendChild(el);
+  });
+}
+
+function goHome(){ stopCam(); show('s-home'); renderHome(); }
+
+// ─── ITEMS ───────────────────────────────────────────────────
+function openDay(n){
+  curDay=DAYS.find(d=>d.day===n);
+  if(!curDay)return;
+  const m=DAY_META[n];
+  document.getElementById('items-title').textContent=curDay.nameTh;
+  const done=curDay.items.filter(i=>uploaded[i.code]).length;
+  document.getElementById('day-summary').innerHTML=
+    `<div class="day-summary-icon">${m.e}</div>
+     <div class="day-summary-text">
+       <strong>${curDay.nameTh} (${curDay.nameZh})</strong>
+       ${curDay.items.length} รายการ · อัปโหลดแล้ว ${done}/${curDay.items.length} รายการ
+     </div>`;
+  renderItems();
+  show('s-items');
+}
+
+function renderItems(){
+  const l=document.getElementById('items-list'); l.innerHTML='';
+  curDay.items.forEach(item=>{
+    const up=uploaded[item.code]||0;
+    const el=document.createElement('div');
+    el.className='item-card';
+    el.innerHTML=`<div class="item-status ${up?'up':''}">${up?'✅':'📷'}</div>
+      <div class="item-details">
+        <div class="item-code">${item.code}</div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-qty">คลัง: ${item.qty.toLocaleString()} ${item.unit}</div>
+      </div>
+      <div class="item-chip ${up?'up':''}">${up?up+' รูป':'ถ่ายเลย →'}</div>`;
+    el.onclick=()=>openCam(item);
+    l.appendChild(el);
+  });
+}
+
+function backToItems(){ stopCam(); closeOv(); if(curDay)openDay(curDay.day); else show('s-items'); }
+
+// ─── CAMERA ──────────────────────────────────────────────────
+async function openCam(item){
+  curItem=item; photos=[];
+  document.getElementById('cam-code').textContent=item.code;
+  document.getElementById('cam-name').textContent=item.name;
+  resetAngles(); renderStrip(); syncUI();
+  show('s-camera');
+  await startCam();
+}
+
+async function startCam(){
+  const v=document.getElementById('cam-video');
+  const err=document.getElementById('cam-error');
+  err.classList.remove('show'); v.style.display='';
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+    v.srcObject=stream;
+  }catch(e){
+    console.warn('cam:',e);
+    err.classList.add('show'); v.style.display='none';
+  }
+}
+
+function stopCam(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  const v=document.getElementById('cam-video'); v.srcObject=null; v.style.display='';
+}
+
+function shoot(){
+  const v=document.getElementById('cam-video'),c=document.getElementById('cam-canvas');
+  if(!stream||!v.videoWidth){openFileIn();return;}
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  c.toBlob(b=>{
+    addAndUpload(b);
+    // flash
+    const f=document.createElement('div');
+    f.style.cssText='position:fixed;inset:0;background:#fff;opacity:.85;z-index:999;pointer-events:none;transition:opacity .25s';
+    document.body.appendChild(f); setTimeout(()=>{f.style.opacity='0';setTimeout(()=>f.remove(),250)},40);
+  },'image/jpeg',.85);
+}
+
+function openFileIn(){ document.getElementById('file-in').click(); }
+function onFileIn(e){
+  Array.from(e.target.files).forEach(f=>addAndUpload(f));
+  e.target.value='';
+}
+
+function addAndUpload(blob){
+  const fname=`${curItem.code}_${String(photos.length+1).padStart(2,'0')}_${Date.now()}.jpg`;
+  const idx=photos.length;
+  photos.push({blob, url:URL.createObjectURL(blob), status:'uploading', fileName:fname});
+  updAngles(); renderStrip(); syncUI();
+  uploadNow(idx);
+}
+
+async function uploadNow(idx){
+  const p=photos[idx];
+  try{
+    const b64=await toB64(p.blob);
+    await postGAS({
+      dayFolder:`วันที่ ${curDay.day} - ${curDay.nameTh}`,
+      itemFolder:`${curItem.code} - ${curItem.name.substring(0,40)}`,
+      fileName:p.fileName, imageData:b64,
+    });
+    p.status='ok';
+    uploaded[curItem.code]=(uploaded[curItem.code]||0)+1;
+    localStorage.setItem('uploaded',JSON.stringify(uploaded));
+  }catch(e){
+    console.error('upload error:',e);
+    p.status='error';
+  }
+  renderStrip(); syncUI();
+}
+
+async function retryUpload(idx){
+  if(photos[idx].status==='uploading') return;
+  photos[idx].status='uploading';
+  renderStrip(); syncUI();
+  await uploadNow(idx);
+}
+
+function delPhoto(i){
+  if(photos[i].status==='uploading'){toast('⏳ กำลังอัปโหลด ลบไม่ได้');return;}
+  URL.revokeObjectURL(photos[i].url);photos.splice(i,1);updAngles();renderStrip();syncUI();
+}
+
+function renderStrip(){
+  const s=document.getElementById('photos-strip');
+  if(!photos.length){s.innerHTML='<div class="strip-empty">ยังไม่มีรูป — กดปุ่มวงกลมเพื่อถ่าย</div>';return;}
+  s.innerHTML='';
+  photos.forEach((p,i)=>{
+    const w=document.createElement('div'); w.className='thumb-wrap';
+    let overlay='';
+    if(p.status==='uploading') overlay='<div class="t-spin">↻</div>';
+    else if(p.status==='ok')   overlay='<div class="t-ok">✅</div>';
+    else                       overlay=`<div class="t-err" onclick="retryUpload(${i})">↺</div>`;
+    const delBtn=p.status!=='uploading'?`<button class="del-btn" onclick="delPhoto(${i})">×</button>`:'';
+    w.innerHTML=`<img src="${p.url}">${overlay}${delBtn}`;
+    s.appendChild(w);
+  });
+}
+
+function syncUI(){
+  const total=photos.length;
+  const ok=photos.filter(p=>p.status==='ok').length;
+  const uploading=photos.filter(p=>p.status==='uploading').length;
+  const err=photos.filter(p=>p.status==='error').length;
+  document.getElementById('count-badge').innerHTML=`${total}<br>รูป`;
+  const st=document.getElementById('status-text');
+  const sc=document.getElementById('status-count');
+  if(!total){ st.textContent='รอการถ่ายรูป'; sc.textContent=''; return; }
+  if(uploading){ st.innerHTML=`<span class="status-pending">⏳ กำลังส่ง ${uploading} รูป...</span>`; }
+  else if(err){ st.innerHTML=`<span style="color:#f44336">❌ ส่งไม่สำเร็จ ${err} รูป — กดที่รูปเพื่อลองใหม่</span>`; }
+  else{ st.innerHTML=`<span class="status-ok">✅ อัปโหลดครบทั้งหมด</span>`; }
+  sc.innerHTML=`<span class="status-ok">${ok}</span>/${total}`;
+}
+
+function resetAngles(){
+  document.querySelectorAll('#angle-bar .a-chip').forEach((c,i)=>{
+    c.className='a-chip'+(i===0?' active':''); c.textContent=ANGLES[i];
+  });
+}
+function updAngles(){
+  const n=photos.length;
+  document.querySelectorAll('#angle-bar .a-chip').forEach((c,i)=>{
+    if(i<n)     {c.className='a-chip done'; c.textContent='✓ '+ANGLES[i].replace(/^.+? /,'');}
+    else if(i===n){c.className='a-chip active'; c.textContent=ANGLES[i];}
+    else        {c.className='a-chip'; c.textContent=ANGLES[i];}
+  });
+}
+
+
+// ─── UPLOAD HELPERS ──────────────────────────────────────────
+async function postGAS(data){
+  const r=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(data)});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json(); if(!j.success)throw new Error(j.error||'failed');
+}
+
+function toB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
+
+// ─── OVERLAY (แสดงเมื่อพยายามออกขณะอัปโหลด) ─────────────────
+function closeOv(){ document.getElementById('ov').classList.add('hidden'); }
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');}
+
+let _tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;
+  t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>
