@@ -55,7 +55,7 @@ button{font-family:'Sarabun',sans-serif;cursor:pointer;border:none;background:no
 .a-chip{flex-shrink:0;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--gray);color:var(--mid);border:1px solid var(--border)}
 .a-chip.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .a-chip.done{background:var(--blue);color:var(--bg);border-color:var(--blue)}
-#cam-wrap{flex:1;position:relative;background:#000;overflow:hidden;min-height:180px}
+#cam-wrap{position:relative;background:#000;overflow:hidden;height:calc(100vh - 310px);max-height:42vh;min-height:140px}
 #cam-video{width:100%;height:100%;object-fit:cover;display:block}
 #cam-canvas{display:none}
 .cam-err{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:#111;padding:30px;text-align:center}
@@ -297,7 +297,8 @@ function addAndUpload(blob){
 async function uploadNow(idx){
   const p=photos[idx];
   try{
-    const b64=await toB64(p.blob);
+    const small=await compressBlob(p.blob);
+    const b64=await toB64(small);
     await postGAS({
       dayFolder:`วันที่ ${curDay.day} - ${curDay.nameTh}`,
       itemFolder:`${curItem.code} - ${curItem.name.substring(0,40)}`,
@@ -306,7 +307,10 @@ async function uploadNow(idx){
     p.status='ok';
     uploaded[curItem.code]=(uploaded[curItem.code]||0)+1;
     localStorage.setItem('uploaded',JSON.stringify(uploaded));
-  }catch(e){p.status='error';}
+  }catch(e){
+    console.error('upload error:',e);
+    p.status='error';
+  }
   renderStrip();syncUI();
 }
 
@@ -360,11 +364,35 @@ function updAngles(){
 }
 
 async function postGAS(data){
-  const r=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(data)});
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const j=await r.json();if(!j.success)throw new Error(j.error||'failed');
+  // no-cors หลีกเลี่ยงปัญหา CORS redirect ของ GAS
+  await fetch(gasUrl,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(data)
+  });
 }
+
 function toB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
+
+// บีบอัดรูปก่อนส่ง (max 1200px, quality 0.78)
+function compressBlob(blob){
+  return new Promise(res=>{
+    const img=new Image();
+    const url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const MAX=1200;
+      let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      const c=document.createElement('canvas');
+      c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(res,'image/jpeg',.78);
+    };
+    img.src=url;
+  });
+}
 function closeOv(){document.getElementById('ov').classList.add('hidden');}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 let _tt;
