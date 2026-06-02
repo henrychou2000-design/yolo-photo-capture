@@ -186,15 +186,26 @@ const ANGLES = ['ป้ายฉลากหน้า','ภาพรวมทั
 let curDay=null,curItem=null,photos=[],stream=null;
 let gasUrl=localStorage.getItem('gas_url')||'https://script.google.com/macros/s/AKfycby8uQmUFV-1oYt73VXSCJgJVtnufIOkbeNXKdZfh7pf8EBeuq30Yj9kkvSk83JCNhUh/exec';
 let uploaded=JSON.parse(localStorage.getItem('uploaded')||'{}');
+let driveCounts={};  // 從 Drive 抓到的共用張數
 
 document.addEventListener('DOMContentLoaded',()=>{
   if(!gasUrl){document.getElementById('setup-box').style.display='';}
   else{document.getElementById('gas-url-in').value=gasUrl;}
-  renderHome();
+  fetchDriveCounts().then(()=>renderHome());
   window.addEventListener('beforeunload',e=>{
     if(photos.some(p=>p.status==='uploading')){e.preventDefault();e.returnValue='มีรูปกำลังอัปโหลดอยู่';}
   });
 });
+
+async function fetchDriveCounts(){
+  try{
+    const r=await fetch(gasUrl);
+    const j=await r.json();
+    if(j.success) driveCounts=j.counts||{};
+  }catch(e){ console.warn('fetchDriveCounts:',e); }
+}
+
+function hasDrivePhotos(code){ return (driveCounts[code]||0)>=6; }
 
 function saveGasUrl(){
   const u=document.getElementById('gas-url-in').value.trim();
@@ -206,7 +217,7 @@ function saveGasUrl(){
 function renderHome(){
   const el=document.getElementById('day-list');el.innerHTML='';
   DAYS.forEach(d=>{
-    const done=d.items.filter(i=>uploaded[i.code]).length;
+    const done=d.items.filter(i=>hasDrivePhotos(i.code)).length;
     const isDone=done===d.items.length;
     const row=document.createElement('div');row.className='day-row';
     row.innerHTML=`<div class="day-num ${isDone?'done':''}">${d.day}</div>
@@ -221,20 +232,21 @@ function renderHome(){
 
 function goHome(){stopCam();show('s-home');renderHome();}
 
-function openDay(n){
+async function openDay(n){
   curDay=DAYS.find(d=>d.day===n);if(!curDay)return;
   document.getElementById('items-title').textContent=curDay.nameTh;
-  const done=curDay.items.filter(i=>uploaded[i.code]).length;
+  await fetchDriveCounts();
+  const done=curDay.items.filter(i=>hasDrivePhotos(i.code)).length;
   document.getElementById('items-summary').innerHTML=
     `<strong>${curDay.nameTh} (${curDay.nameZh})</strong>
-     ${curDay.items.length} รายการ &nbsp;·&nbsp; อัปโหลดแล้ว ${done}/${curDay.items.length}`;
+     ${curDay.items.length} รายการ &nbsp;·&nbsp; ถ่ายแล้ว ${done}/${curDay.items.length} รายการ`;
   renderItems();show('s-items');
 }
 
 function renderItems(){
   const el=document.getElementById('item-list');el.innerHTML='';
   curDay.items.forEach(item=>{
-    const up=!!(uploaded[item.code]);
+    const up=hasDrivePhotos(item.code);
     const row=document.createElement('div');row.className='item-row';
     row.innerHTML=`<div class="item-dot ${up?'done':''}"></div>
       <div class="item-info">
