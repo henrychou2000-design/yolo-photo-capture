@@ -1,6 +1,6 @@
 // Google Apps Script — YOLO Photo Upload API
 
-// POST：上傳照片
+// POST：上傳照片，並更新 Script Properties 計數
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -10,6 +10,7 @@ function doPost(e) {
     var itemFolder = data.itemFolder;
     var fileName   = data.fileName;
     var imageData  = data.imageData;
+    var code       = data.code;
 
     var rootName = 'YOLO Training Photos';
     var rootFolders = DriveApp.getFoldersByName(rootName);
@@ -25,6 +26,14 @@ function doPost(e) {
     var imageBlob  = Utilities.newBlob(Utilities.base64Decode(base64Data), 'image/jpeg', fileName);
     var file = itemF.createFile(imageBlob);
 
+    // 更新快取計數
+    if (code) {
+      var props = PropertiesService.getScriptProperties();
+      var counts = JSON.parse(props.getProperty('counts') || '{}');
+      counts[code] = (counts[code] || 0) + 1;
+      props.setProperty('counts', JSON.stringify(counts));
+    }
+
     return ContentService
       .createTextOutput(JSON.stringify({ success: true, fileId: file.getId(), fileName: fileName }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -37,33 +46,11 @@ function doPost(e) {
   }
 }
 
-// GET：回傳每個品項的上傳張數（共用狀態）
+// GET：直接讀 Script Properties，不掃 Drive（< 1 秒）
 function doGet(e) {
   try {
-    var counts = {};
-    var rootName = 'YOLO Training Photos';
-    var rootFolders = DriveApp.getFoldersByName(rootName);
-    if (!rootFolders.hasNext()) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ success: true, counts: {} }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    var root = rootFolders.next();
-    var dayFolders = root.getFolders();
-    while (dayFolders.hasNext()) {
-      var dayF = dayFolders.next();
-      var itemFolders = dayF.getFolders();
-      while (itemFolders.hasNext()) {
-        var itemF = itemFolders.next();
-        var folderName = itemF.getName();
-        // 取品項編號（格式：CODE - 品名）
-        var code = folderName.split(' - ')[0].trim();
-        var files = itemF.getFiles();
-        var count = 0;
-        while (files.hasNext()) { files.next(); count++; }
-        counts[code] = (counts[code] || 0) + count;
-      }
-    }
+    var props = PropertiesService.getScriptProperties();
+    var counts = JSON.parse(props.getProperty('counts') || '{}');
     return ContentService
       .createTextOutput(JSON.stringify({ success: true, counts: counts }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -72,4 +59,29 @@ function doGet(e) {
       .createTextOutput(JSON.stringify({ success: false, error: err.toString(), counts: {} }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// 手動同步：從 Drive 重新建立計數快取（有人直接上傳 Drive 時使用）
+function syncCountsFromDrive() {
+  var counts = {};
+  var rootName = 'YOLO Training Photos';
+  var rootFolders = DriveApp.getFoldersByName(rootName);
+  if (rootFolders.hasNext()) {
+    var root = rootFolders.next();
+    var dayFolders = root.getFolders();
+    while (dayFolders.hasNext()) {
+      var dayF = dayFolders.next();
+      var itemFolders = dayF.getFolders();
+      while (itemFolders.hasNext()) {
+        var itemF = itemFolders.next();
+        var code = itemF.getName().split(' - ')[0].trim();
+        var files = itemF.getFiles();
+        var count = 0;
+        while (files.hasNext()) { files.next(); count++; }
+        counts[code] = (counts[code] || 0) + count;
+      }
+    }
+  }
+  PropertiesService.getScriptProperties().setProperty('counts', JSON.stringify(counts));
+  Logger.log('同步完成：' + JSON.stringify(counts));
 }

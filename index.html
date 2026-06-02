@@ -340,7 +340,7 @@ async function uploadNow(idx){
     await postGAS({
       dayFolder:`วันที่ ${curDay.day} - ${curDay.nameTh}`,
       itemFolder:`${curItem.code} - ${curItem.name.substring(0,40)}`,
-      fileName:p.fileName,imageData:b64,
+      fileName:p.fileName,imageData:b64,code:curItem.code,
     });
     p.status='ok';
     uploaded[curItem.code]=(uploaded[curItem.code]||0)+1;
