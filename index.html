@@ -191,6 +191,7 @@ let driveCounts=JSON.parse(localStorage.getItem('drive_counts')||'{}');
 document.addEventListener('DOMContentLoaded',()=>{
   if(!gasUrl){document.getElementById('setup-box').style.display='';}
   else{document.getElementById('gas-url-in').value=gasUrl;}
+  renderHome();
   fetchDriveCounts().then(()=>renderHome());
   window.addEventListener('beforeunload',e=>{
     if(photos.some(p=>p.status==='uploading')){e.preventDefault();e.returnValue='มีรูปกำลังอัปโหลดอยู่';}
