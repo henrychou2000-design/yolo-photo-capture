@@ -208,7 +208,7 @@ async function fetchDriveCounts(){
   }catch(e){ console.warn('fetchDriveCounts:',e); }
 }
 
-function hasDrivePhotos(code){ return (driveCounts[code]||0)>=6; }
+function hasDrivePhotos(code){ return (driveCounts[code]||0)>=1; }
 
 function saveGasUrl(){
   const u=document.getElementById('gas-url-in').value.trim();
