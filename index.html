@@ -186,7 +186,7 @@ const ANGLES = ['ป้ายฉลากหน้า','ภาพรวมทั
 let curDay=null,curItem=null,photos=[],stream=null;
 let gasUrl=localStorage.getItem('gas_url')||'https://script.google.com/macros/s/AKfycby8uQmUFV-1oYt73VXSCJgJVtnufIOkbeNXKdZfh7pf8EBeuq30Yj9kkvSk83JCNhUh/exec';
 let uploaded=JSON.parse(localStorage.getItem('uploaded')||'{}');
-let driveCounts={};  // 從 Drive 抓到的共用張數
+let driveCounts=JSON.parse(localStorage.getItem('drive_counts')||'{}');
 
 document.addEventListener('DOMContentLoaded',()=>{
   if(!gasUrl){document.getElementById('setup-box').style.display='';}
@@ -201,7 +201,10 @@ async function fetchDriveCounts(){
   try{
     const r=await fetch(gasUrl);
     const j=await r.json();
-    if(j.success) driveCounts=j.counts||{};
+    if(j.success){
+      driveCounts=j.counts||{};
+      localStorage.setItem('drive_counts',JSON.stringify(driveCounts));
+    }
   }catch(e){ console.warn('fetchDriveCounts:',e); }
 }
 
@@ -319,6 +322,8 @@ async function uploadNow(idx){
     p.status='ok';
     uploaded[curItem.code]=(uploaded[curItem.code]||0)+1;
     localStorage.setItem('uploaded',JSON.stringify(uploaded));
+    driveCounts[curItem.code]=(driveCounts[curItem.code]||0)+1;
+    localStorage.setItem('drive_counts',JSON.stringify(driveCounts));
   }catch(e){
     console.error('upload error:',e);
     p.status='error';
